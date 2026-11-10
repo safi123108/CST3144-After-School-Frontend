@@ -1,0 +1,20 @@
+{
+  "name": "cst3144-after-school-frontend",
+  "version": "1.0.0",
+  "description": "CST3144 After-School App Vue.js Frontend",
+  "main": "index.html",
+  "scripts": {
+    "start": "echo 'Open index.html in a browser or deploy to GitHub Pages'",
+    "lint": "echo 'Linting not configured yet'"
+  },
+  "keywords": [
+    "vue",
+    "cst3144",
+    "after-school",
+    "frontend"
+  ],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {},
+  "devDependencies": {}
+}

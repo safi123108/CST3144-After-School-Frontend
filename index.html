@@ -1,0 +1,354 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CST3144 After-School App</title>
+  <link rel="stylesheet" href="css/style.css">
+  <script src="https://unpkg.com/vue@3/dist/vue.global.js" defer></script>
+  <script src="js/app.js" defer></script>
+</head>
+<body>
+  <div id="app">
+    <header class="site-header">
+      <div class="header-container">
+        <div class="logo">
+          <span class="logo-icon">📖</span>
+          <div class="brand">
+            <span class="logo-text">After-School App</span>
+            <span class="logo-tagline">Learn · Practice · Excel</span>
+          </div>
+        </div>
+        <nav class="main-nav">
+          <a href="#" class="nav-link">Home</a>
+          <a href="#" class="nav-link active">Lessons</a>
+          <a href="#" class="nav-link">About</a>
+          <a href="#" class="nav-link">Contact</a>
+          <a href="#" class="nav-link">FAQ</a>
+        </nav>
+        <div class="header-actions">
+          <button class="cart-btn" @click="toggleCart" aria-label="Shopping cart">
+            <span class="cart-icon">🛒</span>
+            <span class="cart-count">{{ cartCount }}</span>
+          </button>
+        </div>
+      </div>
+    </header>
+
+    <section class="hero">
+      <div class="hero-container">
+        <div class="hero-content">
+          <span class="hero-badge">Your Learning Partner</span>
+          <h1 class="hero-title">Learn Today, Excel Tomorrow</h1>
+          <p class="hero-subtitle">Premium online lessons for school subjects, designed to help you learn better, practice more and achieve more.</p>
+          <div class="hero-search">
+            <input type="text" v-model="searchQuery" @input="onSearchInput" placeholder="Search for lessons..." class="hero-search-input">
+            <button class="hero-search-btn" onclick="document.getElementById('lessons-view').scrollIntoView({ behavior: 'smooth' })">Browse Lessons</button>
+          </div>
+        </div>
+        <div class="hero-image">
+          <img src="http://localhost:3000/images/hero.svg" alt="Student learning with laptop" class="hero-img">
+        </div>
+      </div>
+    </section>
+
+    <section class="benefits">
+      <div class="benefits-container">
+        <div class="benefit-item">
+          <span class="benefit-icon">📚</span>
+          <h3>Expert Instructors</h3>
+          <p>Learn from the best</p>
+        </div>
+        <div class="benefit-item">
+          <span class="benefit-icon">✓</span>
+          <h3>Trusted & Secure</h3>
+          <p>Shop with confidence</p>
+        </div>
+        <div class="benefit-item">
+          <span class="benefit-icon">⚡</span>
+          <h3>Instant Access</h3>
+          <p>Start learning immediately</p>
+        </div>
+        <div class="benefit-item">
+          <span class="benefit-icon">💬</span>
+          <h3>Dedicated Support</h3>
+          <p>We're here to help</p>
+        </div>
+      </div>
+    </section>
+
+    <section id="lessons-view" class="lessons-section">
+      <div class="lessons-container">
+        <div class="section-header">
+          <h2>Popular Lessons</h2>
+          <p class="section-subtitle">Choose from our wide range of subjects</p>
+          <div class="lessons-controls">
+            <input
+              type="text"
+              v-model="searchQuery"
+              @input="onSearchInput"
+              placeholder="Search lessons..."
+              class="search-input"
+              aria-label="Search lessons"
+            >
+            <div class="sort-controls">
+              <select v-model="sortCriteria" class="sort-select">
+                <option value="">Sort by: Default</option>
+                <option value="topic:asc">Sort by: Topic (A-Z)</option>
+                <option value="topic:desc">Sort by: Topic (Z-A)</option>
+                <option value="location:asc">Sort by: Location (A-Z)</option>
+                <option value="location:desc">Sort by: Location (Z-A)</option>
+                <option value="price:asc">Sort by: Price (Low to High)</option>
+                <option value="price:desc">Sort by: Price (High to Low)</option>
+                <option value="space:asc">Sort by: Spaces (Low to High)</option>
+                <option value="space:desc">Sort by: Spaces (High to Low)</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <div v-if="loading" class="loading-state">
+          <p>Loading lessons...</p>
+        </div>
+
+        <div v-else-if="searchLoading" class="loading-state">
+          <p>Searching lessons...</p>
+        </div>
+
+        <div v-else-if="error" class="error-state">
+          <p class="error-message">{{ error }}</p>
+        </div>
+
+        <div v-else-if="searchError" class="error-state">
+          <p class="error-message">{{ searchError }}</p>
+        </div>
+
+        <div v-else-if="searchResults !== null && searchResults.length === 0" class="empty-state">
+          <p>No lessons match your search.</p>
+        </div>
+
+        <div v-else-if="lessons.length === 0" class="empty-state">
+          <p>No lessons available.</p>
+        </div>
+
+        <div v-else class="lessons-grid">
+          <article v-for="lesson in sortedLessons" :key="lesson._id" class="lesson-card">
+            <div class="lesson-card-image">
+              <img
+                :src="`http://localhost:3000/images/${lesson.image.replace('.png', '.svg')}`"
+                :alt="lesson.topic"
+                class="lesson-image"
+              >
+            </div>
+<div class="lesson-card-content">
+              <h3 class="lesson-title">{{ lesson.topic }}</h3>
+              <p class="lesson-location">{{ lesson.location }}</p>
+              <div class="lesson-meta">
+                <div class="lesson-price">$ {{ lesson.price }}</div>
+                <div class="lesson-spaces-badge">{{ lesson.space }} spaces left</div>
+              </div>
+              <button
+                v-bind:disabled="lesson.space <= 0"
+                class="add-to-cart-btn"
+                @click="addToCart(lesson)"
+              >
+                {{ lesson.space <= 0 ? 'Fully Booked' : 'Add to Cart' }}
+              </button>
+              <button class="enrolment-btn" @click="fetchEnrolment(lesson._id)">View Enrolment</button>
+              <div class="enrolment-info">
+                <p v-if="enrolmentByLesson[lesson._id] && enrolmentByLesson[lesson._id].loading">Loading enrolment...</p>
+                <p v-else-if="enrolmentByLesson[lesson._id] && enrolmentByLesson[lesson._id].error" class="error-message">{{ enrolmentByLesson[lesson._id].error }}</p>
+                <template v-else-if="enrolmentByLesson[lesson._id] && enrolmentByLesson[lesson._id].data">
+                  <p>Total enrolled: {{ enrolmentByLesson[lesson._id].data.totalEnrolled }}</p>
+                  <p v-if="enrolmentByLesson[lesson._id].data.totalEnrolled === 0">No enrolments yet.</p>
+                </template>
+              </div>
+            </div>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section id="teachers-view" class="teachers-section">
+      <div class="teachers-container">
+        <div class="section-header">
+          <h2>Teachers</h2>
+          <p class="section-subtitle">View lessons by teacher</p>
+        </div>
+
+        <div v-if="teachersLoading" class="loading-state">
+          <p>Loading teachers...</p>
+        </div>
+
+        <div v-else-if="teachersError" class="error-state">
+          <p class="error-message">{{ teachersError }}</p>
+        </div>
+
+        <div v-else-if="teachers.length === 0" class="empty-state">
+          <p>No teachers available.</p>
+        </div>
+
+        <div v-else class="teachers-list">
+          <div v-for="teacher in teachers" :key="teacher._id" class="teacher-card">
+            <div class="teacher-info">
+              <h3 class="teacher-name">{{ teacher.name }}</h3>
+              <p v-if="teacher.lessonIds" class="teacher-meta">Lessons: {{ teacher.lessonIds.length }}</p>
+            </div>
+            <button class="view-lessons-btn" @click="fetchTeacherLessons(teacher._id)">
+              {{ selectedTeacherId === teacher._id ? 'Viewing Lessons' : 'View Lessons' }}
+            </button>
+          </div>
+        </div>
+
+        <div v-if="selectedTeacherId" class="teacher-lessons">
+          <h3 class="teacher-lessons-title">
+            Lessons by {{ selectedTeacher ? selectedTeacher.name : 'Teacher' }}
+          </h3>
+
+          <div v-if="teacherLessonsLoading" class="loading-state">
+            <p>Loading teacher lessons...</p>
+          </div>
+
+          <div v-else-if="teacherLessonsError" class="error-state">
+            <p class="error-message">{{ teacherLessonsError }}</p>
+          </div>
+
+          <div v-else-if="teacherLessons.length === 0" class="empty-state">
+            <p>No lessons available for this teacher.</p>
+          </div>
+
+          <div v-else class="lessons-grid">
+            <article v-for="lesson in teacherLessons" :key="lesson._id" class="lesson-card">
+              <div class="lesson-card-image">
+                <img
+                  :src="`http://localhost:3000/images/${lesson.image.replace('.png', '.svg')}`"
+                  :alt="lesson.topic"
+                  class="lesson-image"
+                >
+              </div>
+              <div class="lesson-card-content">
+                <h3 class="lesson-title">{{ lesson.topic }}</h3>
+                <p class="lesson-location">{{ lesson.location }}</p>
+                <div class="lesson-meta">
+                  <div class="lesson-price">$ {{ lesson.price }}</div>
+                  <div class="lesson-spaces-badge">{{ lesson.space }} spaces left</div>
+                </div>
+                <button
+                  v-bind:disabled="lesson.space <= 0"
+                  class="add-to-cart-btn"
+                  @click="addToCart(lesson)"
+                >
+                  {{ lesson.space <= 0 ? 'Fully Booked' : 'Add to Cart' }}
+                </button>
+                <button class="enrolment-btn" @click="fetchEnrolment(lesson._id)">View Enrolment</button>
+                <div class="enrolment-info">
+                  <p v-if="enrolmentByLesson[lesson._id] && enrolmentByLesson[lesson._id].loading">Loading enrolment...</p>
+                  <p v-else-if="enrolmentByLesson[lesson._id] && enrolmentByLesson[lesson._id].error" class="error-message">{{ enrolmentByLesson[lesson._id].error }}</p>
+                  <template v-else-if="enrolmentByLesson[lesson._id] && enrolmentByLesson[lesson._id].data">
+                    <p>Total enrolled: {{ enrolmentByLesson[lesson._id].data.totalEnrolled }}</p>
+                    <p v-if="enrolmentByLesson[lesson._id].data.totalEnrolled === 0">No enrolments yet.</p>
+                  </template>
+                </div>
+              </div>
+            </article>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="cart-view" class="cart-panel" :class="{ open: view === 'cart' }">
+      <div class="cart-header">
+        <h2>Your Cart</h2>
+        <button class="close-cart-btn" @click="toggleCart" aria-label="Close cart">✕</button>
+      </div>
+      <div class="cart-content">
+        <div v-if="cart.length === 0" class="cart-empty">
+          <span class="empty-icon">🛒</span>
+          <p class="cart-empty-title">Your cart is empty</p>
+          <p class="cart-empty-subtitle">Add some lessons to get started!</p>
+        </div>
+
+        <template v-else>
+          <div class="cart-items">
+            <div v-for="item in cart" :key="item.lessonId" class="cart-item">
+              <span class="cart-item-topic">{{ item.topic }}</span>
+              <span class="cart-item-qty">{{ item.quantity }}</span>
+              <button class="remove-btn" @click="removeFromCart(item.lessonId)">-</button>
+            </div>
+          </div>
+
+          <div class="order-summary">
+            <h3>Order Summary</h3>
+            <div class="summary-item" v-for="item in cart" :key="item.lessonId">
+              <span class="summary-topic">{{ item.topic }}</span>
+              <span class="summary-qty">× {{ item.quantity }}</span>
+              <span class="summary-price">$ {{ (lessons.find(l => l._id === item.lessonId)?.price || 0) * item.quantity }}</span>
+            </div>
+            <div class="summary-total">
+              <span>Total</span>
+              <span>$ {{ cartTotal }}</span>
+            </div>
+          </div>
+        </template>
+
+        <div v-if="!orderConfirmed" class="checkout-form">
+          <h3>Checkout</h3>
+          <div class="form-group">
+            <label for="customer-name">Customer Name</label>
+            <input
+              type="text"
+              id="customer-name"
+              v-model="customerName"
+              @blur="validateNameOnBlur"
+              :class="{ 'error-input': nameError }"
+              placeholder="Enter your name"
+            />
+            <p v-if="nameError" class="form-error">{{ nameError }}</p>
+          </div>
+          <div class="form-group">
+            <label for="customer-phone">Phone Number</label>
+            <input
+              type="tel"
+              id="customer-phone"
+              v-model="customerPhone"
+              @blur="validatePhoneOnBlur"
+              :class="{ 'error-input': phoneError }"
+              placeholder="Enter your phone number"
+            />
+            <p v-if="phoneError" class="form-error">{{ phoneError }}</p>
+          </div>
+          <p v-if="orderError" class="form-error">{{ orderError }}</p>
+          <button
+            class="checkout-btn"
+            :disabled="cart.length === 0 || !validateForm() || submitting"
+            @click="handleCheckout"
+          >
+            {{ submitting ? 'Placing Order...' : 'Place Order' }}
+          </button>
+        </div>
+
+        <div v-else class="order-confirmation">
+          <div class="confirmation-icon">✓</div>
+          <h3>Order Placed!</h3>
+          <p>Thank you {{ customerName }}. Your order has been submitted successfully.</p>
+          <button class="checkout-btn" @click="clearOrderConfirmation">Place Another Order</button>
+        </div>
+      </div>
+    </section>
+
+    <footer class="site-footer">
+      <div class="footer-container">
+        <div class="footer-brand">
+          <span class="footer-logo">After-School App</span>
+          <p class="footer-tagline">Learn Today. Excel Tomorrow.</p>
+        </div>
+        <nav class="footer-nav">
+          <a href="#" class="footer-link">About</a>
+          <a href="#" class="footer-link">Contact</a>
+          <a href="#" class="footer-link">FAQ</a>
+        </nav>
+      </div>
+    </footer>
+  </div>
+</body>
+</html>
