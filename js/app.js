@@ -594,18 +594,54 @@ const app = createApp({
       view.value = 'lessons';
     };
 
-    const toggleCart = () => {
-      const nextView = view.value === 'lessons' ? 'cart' : 'lessons';
+    const closeCart = () => {
+      if (view.value !== 'cart') return;
       if (orderConfirmed.value) {
         resetOrderState();
       }
-      view.value = nextView;
+      view.value = 'lessons';
+    };
+
+    const toggleCart = () => {
+      if (view.value === 'cart') {
+        closeCart();
+        return;
+      }
+      if (orderConfirmed.value) {
+        resetOrderState();
+      }
+      view.value = 'cart';
+    };
+
+    const scrollToLessons = () => {
+      if (typeof document === 'undefined') return;
+      const lessonsSection = document.getElementById('lessons-view');
+      if (lessonsSection && typeof lessonsSection.scrollIntoView === 'function') {
+        lessonsSection.scrollIntoView({ behavior: 'smooth' });
+      }
+    };
+
+    const handleGlobalKeydown = (event) => {
+      if (event && event.key === 'Escape' && view.value === 'cart') {
+        closeCart();
+      }
     };
 
     onMounted(() => {
       fetchLessons();
       fetchTeachers();
+      if (typeof document !== 'undefined' && typeof document.addEventListener === 'function') {
+        document.addEventListener('keydown', handleGlobalKeydown);
+      }
     });
+
+    if (typeof Vue.onUnmounted === 'function') {
+      Vue.onUnmounted(() => {
+        if (typeof document !== 'undefined' && typeof document.removeEventListener === 'function') {
+          document.removeEventListener('keydown', handleGlobalKeydown);
+        }
+      });
+    }
 
     return {
       lessons,
@@ -647,7 +683,10 @@ const app = createApp({
       onSearchInput,
       addToCart,
       removeFromCart,
+      closeCart,
       toggleCart,
+      scrollToLessons,
+      handleGlobalKeydown,
       isFormValid,
       onNameInput,
       onPhoneInput,

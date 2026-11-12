@@ -10,7 +10,7 @@
   <script src="js/app.js" defer></script>
 </head>
 <body>
-  <div id="app">
+  <div id="app" v-cloak>
     <header class="site-header">
       <div class="header-container">
         <div class="logo">
@@ -26,17 +26,19 @@
           </div>
         </div>
         <nav class="main-nav" aria-label="Main navigation">
-          <a href="#" class="nav-link">Home</a>
-          <a href="#" class="nav-link active">Lessons</a>
-          <a href="#" class="nav-link">About</a>
-          <a href="#" class="nav-link">Contact</a>
-          <a href="#" class="nav-link">FAQ</a>
+          <a href="#hero" class="nav-link">Home</a>
+          <a href="#lessons-view" class="nav-link active">Lessons</a>
+          <a href="#teachers-view" class="nav-link">Teachers</a>
+          <a href="#benefits-view" class="nav-link">About</a>
         </nav>
         <div class="header-actions">
           <button
+            type="button"
             class="cart-btn"
             @click="toggleCart"
             :disabled="cart.length === 0 && !orderConfirmed && view !== 'cart'"
+            :aria-expanded="view === 'cart'"
+            aria-controls="cart-view"
             aria-label="Shopping cart"
           >
             <span class="cart-icon" aria-hidden="true">
@@ -53,7 +55,8 @@
       </div>
     </header>
 
-    <section class="hero">
+    <main id="main-content">
+    <section id="hero" class="hero">
       <div class="hero-container">
         <div class="hero-content">
           <span class="hero-badge">Your Learning Partner</span>
@@ -69,7 +72,7 @@
               class="hero-search-input"
               aria-label="Search for lessons"
             >
-            <button class="hero-search-btn" onclick="document.getElementById('lessons-view').scrollIntoView({ behavior: 'smooth' })">Browse Lessons</button>
+            <button type="button" class="hero-search-btn" @click="scrollToLessons">Browse Lessons</button>
           </div>
 
           <ul class="hero-trust">
@@ -94,7 +97,7 @@
       </div>
     </section>
 
-    <section class="benefits">
+    <section id="benefits-view" class="benefits" aria-label="Key benefits">
       <div class="benefits-container">
         <div class="benefit-item">
           <span class="benefit-icon" aria-hidden="true">
@@ -178,27 +181,27 @@
           </div>
         </div>
 
-        <div v-if="loading" class="loading-state">
+        <div v-if="loading" class="loading-state" role="status" aria-live="polite">
           <p>Loading lessons...</p>
         </div>
 
-        <div v-else-if="searchLoading" class="loading-state">
+        <div v-else-if="searchLoading" class="loading-state" role="status" aria-live="polite">
           <p>Searching lessons...</p>
         </div>
 
-        <div v-else-if="error" class="error-state">
+        <div v-else-if="error" class="error-state" role="alert" aria-live="assertive">
           <p class="error-message">{{ error }}</p>
         </div>
 
-        <div v-else-if="searchError" class="error-state">
+        <div v-else-if="searchError" class="error-state" role="alert" aria-live="assertive">
           <p class="error-message">{{ searchError }}</p>
         </div>
 
-        <div v-else-if="searchResults !== null && searchResults.length === 0" class="empty-state">
+        <div v-else-if="searchResults !== null && searchResults.length === 0" class="empty-state" role="status" aria-live="polite">
           <p>No lessons match your search.</p>
         </div>
 
-        <div v-else-if="lessons.length === 0" class="empty-state">
+        <div v-else-if="lessons.length === 0" class="empty-state" role="status" aria-live="polite">
           <p>No lessons available.</p>
         </div>
 
@@ -228,17 +231,24 @@
               </div>
               <div class="lesson-actions">
                 <button
+                  type="button"
                   v-bind:disabled="lesson.space <= 0"
                   class="add-to-cart-btn"
                   @click="addToCart(lesson)"
+                  :aria-label="lesson.space <= 0 ? `${lesson.topic || 'Lesson'} is fully booked` : `Add ${lesson.topic || 'lesson'} to cart`"
                 >
                   {{ lesson.space <= 0 ? 'Fully Booked' : 'Add to Cart' }}
                 </button>
-                <button class="enrolment-btn" @click="fetchEnrolment(lesson._id)">View Enrolment</button>
+                <button
+                  type="button"
+                  class="enrolment-btn"
+                  @click="fetchEnrolment(lesson._id)"
+                  :aria-label="`View enrolment for ${lesson.topic || 'lesson'}`"
+                >View Enrolment</button>
               </div>
-              <div class="enrolment-info">
+              <div class="enrolment-info" aria-live="polite">
                 <p v-if="enrolmentByLesson[lesson._id] && enrolmentByLesson[lesson._id].loading">Loading enrolment...</p>
-                <p v-else-if="enrolmentByLesson[lesson._id] && enrolmentByLesson[lesson._id].error" class="error-message">{{ enrolmentByLesson[lesson._id].error }}</p>
+                <p v-else-if="enrolmentByLesson[lesson._id] && enrolmentByLesson[lesson._id].error" class="error-message" role="alert">{{ enrolmentByLesson[lesson._id].error }}</p>
                 <template v-else-if="enrolmentByLesson[lesson._id] && enrolmentByLesson[lesson._id].data">
                   <p>Total enrolled: {{ enrolmentByLesson[lesson._id].data.totalEnrolled }}</p>
                   <p v-if="enrolmentByLesson[lesson._id].data.totalEnrolled === 0">No enrolments yet.</p>
@@ -258,15 +268,15 @@
           <p class="section-subtitle">View lessons by teacher</p>
         </div>
 
-        <div v-if="teachersLoading" class="loading-state">
+        <div v-if="teachersLoading" class="loading-state" role="status" aria-live="polite">
           <p>Loading teachers...</p>
         </div>
 
-        <div v-else-if="teachersError" class="error-state">
+        <div v-else-if="teachersError" class="error-state" role="alert" aria-live="assertive">
           <p class="error-message">{{ teachersError }}</p>
         </div>
 
-        <div v-else-if="teachers.length === 0" class="empty-state">
+        <div v-else-if="teachers.length === 0" class="empty-state" role="status" aria-live="polite">
           <p>No teachers available.</p>
         </div>
 
@@ -285,7 +295,13 @@
               <h3 class="teacher-name">{{ teacher.name }}</h3>
               <p v-if="teacher.lessonIds" class="teacher-meta">Lessons: {{ teacher.lessonIds.length }}</p>
             </div>
-            <button class="view-lessons-btn" @click="fetchTeacherLessons(teacher._id)">
+            <button
+              type="button"
+              class="view-lessons-btn"
+              @click="fetchTeacherLessons(teacher._id)"
+              :aria-expanded="selectedTeacherId === teacher._id"
+              :aria-label="selectedTeacherId === teacher._id ? `Collapse lessons for ${teacher.name || 'teacher'}` : `View lessons for ${teacher.name || 'teacher'}`"
+            >
               {{ selectedTeacherId === teacher._id ? 'Viewing Lessons' : 'View Lessons' }}
             </button>
           </div>
@@ -296,15 +312,15 @@
             Lessons by {{ selectedTeacher ? selectedTeacher.name : 'Teacher' }}
           </h3>
 
-          <div v-if="teacherLessonsLoading" class="loading-state">
+          <div v-if="teacherLessonsLoading" class="loading-state" role="status" aria-live="polite">
             <p>Loading teacher lessons...</p>
           </div>
 
-          <div v-else-if="teacherLessonsError" class="error-state">
+          <div v-else-if="teacherLessonsError" class="error-state" role="alert" aria-live="assertive">
             <p class="error-message">{{ teacherLessonsError }}</p>
           </div>
 
-          <div v-else-if="teacherLessons.length === 0" class="empty-state">
+          <div v-else-if="teacherLessons.length === 0" class="empty-state" role="status" aria-live="polite">
             <p>No lessons available for this teacher.</p>
           </div>
 
@@ -334,17 +350,24 @@
                 </div>
                 <div class="lesson-actions">
                   <button
+                    type="button"
                     v-bind:disabled="lesson.space <= 0"
                     class="add-to-cart-btn"
                     @click="addToCart(lesson)"
+                    :aria-label="lesson.space <= 0 ? `${lesson.topic || 'Lesson'} is fully booked` : `Add ${lesson.topic || 'lesson'} to cart`"
                   >
                     {{ lesson.space <= 0 ? 'Fully Booked' : 'Add to Cart' }}
                   </button>
-                  <button class="enrolment-btn" @click="fetchEnrolment(lesson._id)">View Enrolment</button>
+                  <button
+                    type="button"
+                    class="enrolment-btn"
+                    @click="fetchEnrolment(lesson._id)"
+                    :aria-label="`View enrolment for ${lesson.topic || 'lesson'}`"
+                  >View Enrolment</button>
                 </div>
-                <div class="enrolment-info">
+                <div class="enrolment-info" aria-live="polite">
                   <p v-if="enrolmentByLesson[lesson._id] && enrolmentByLesson[lesson._id].loading">Loading enrolment...</p>
-                  <p v-else-if="enrolmentByLesson[lesson._id] && enrolmentByLesson[lesson._id].error" class="error-message">{{ enrolmentByLesson[lesson._id].error }}</p>
+                  <p v-else-if="enrolmentByLesson[lesson._id] && enrolmentByLesson[lesson._id].error" class="error-message" role="alert">{{ enrolmentByLesson[lesson._id].error }}</p>
                   <template v-else-if="enrolmentByLesson[lesson._id] && enrolmentByLesson[lesson._id].data">
                     <p>Total enrolled: {{ enrolmentByLesson[lesson._id].data.totalEnrolled }}</p>
                     <p v-if="enrolmentByLesson[lesson._id].data.totalEnrolled === 0">No enrolments yet.</p>
@@ -356,18 +379,28 @@
         </div>
       </div>
     </section>
+    </main>
 
-    <section id="cart-view" class="cart-panel" :class="{ open: view === 'cart' }">
+    <section
+      id="cart-view"
+      class="cart-panel"
+      :class="{ open: view === 'cart' }"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="cart-drawer-title"
+      :aria-hidden="view !== 'cart'"
+      tabindex="-1"
+    >
       <div class="cart-header">
-        <h2>Your Cart</h2>
-        <button class="close-cart-btn" @click="toggleCart" aria-label="Close cart">
+        <h2 id="cart-drawer-title">Your Cart</h2>
+        <button type="button" class="close-cart-btn" @click="toggleCart" aria-label="Close cart">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" aria-hidden="true">
             <path d="M6 6l12 12M18 6L6 18"></path>
           </svg>
         </button>
       </div>
       <div class="cart-content">
-        <div v-if="cart.length === 0 && !orderConfirmed" class="cart-empty">
+        <div v-if="cart.length === 0 && !orderConfirmed" class="cart-empty" role="status" aria-live="polite">
           <span class="empty-icon" aria-hidden="true">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
               <path d="M3 4h2l2.4 10.4a2 2 0 0 0 2 1.6h7.7a2 2 0 0 0 2-1.55L21 8H6"></path>
@@ -384,7 +417,7 @@
             <div v-for="item in cart" :key="item.lessonId" class="cart-item">
               <span class="cart-item-topic">{{ item.topic }}</span>
               <span class="cart-item-qty">{{ item.quantity }}</span>
-              <button class="remove-btn" @click="removeFromCart(item.lessonId)" :aria-label="`Remove one ${item.topic} space`">-</button>
+              <button type="button" class="remove-btn" @click="removeFromCart(item.lessonId)" :aria-label="`Remove one ${item.topic || 'lesson'} space`">-</button>
             </div>
           </div>
 
@@ -413,9 +446,11 @@
               @input="onNameInput"
               @blur="validateNameOnBlur"
               :class="{ 'error-input': nameError }"
+              :aria-invalid="Boolean(nameError)"
+              :aria-describedby="nameError ? 'customer-name-error' : undefined"
               placeholder="Enter your name"
             />
-            <p v-if="nameError" class="form-error">{{ nameError }}</p>
+            <p v-if="nameError" id="customer-name-error" class="form-error" role="alert">{{ nameError }}</p>
           </div>
           <div class="form-group">
             <label for="customer-phone">Phone Number</label>
@@ -426,12 +461,15 @@
               @input="onPhoneInput"
               @blur="validatePhoneOnBlur"
               :class="{ 'error-input': phoneError }"
+              :aria-invalid="Boolean(phoneError)"
+              :aria-describedby="phoneError ? 'customer-phone-error' : undefined"
               placeholder="Enter your phone number"
             />
-            <p v-if="phoneError" class="form-error">{{ phoneError }}</p>
+            <p v-if="phoneError" id="customer-phone-error" class="form-error" role="alert">{{ phoneError }}</p>
           </div>
-          <p v-if="orderError" class="form-error">{{ orderError }}</p>
+          <p v-if="orderError" class="form-error" role="alert" aria-live="assertive">{{ orderError }}</p>
           <button
+            type="button"
             class="checkout-btn"
             :disabled="cart.length === 0 || !isFormValid || submitting"
             @click="handleCheckout"
@@ -440,7 +478,7 @@
           </button>
         </div>
 
-        <div v-else class="order-confirmation">
+        <div v-else class="order-confirmation" role="status" aria-live="polite">
           <div class="confirmation-icon" aria-hidden="true">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
               <path d="M5 12.5l4.5 4.5L19 7.5"></path>
@@ -448,7 +486,7 @@
           </div>
           <h3>Order Placed!</h3>
           <p>Thank you {{ customerName }}. Your order has been submitted successfully.</p>
-          <button class="checkout-btn" @click="clearOrderConfirmation">Place Another Order</button>
+          <button type="button" class="checkout-btn" @click="clearOrderConfirmation">Place Another Order</button>
         </div>
       </div>
     </section>
@@ -460,9 +498,10 @@
           <p class="footer-tagline">Learn Today. Excel Tomorrow.</p>
         </div>
         <nav class="footer-nav" aria-label="Footer navigation">
-          <a href="#" class="footer-link">About</a>
-          <a href="#" class="footer-link">Contact</a>
-          <a href="#" class="footer-link">FAQ</a>
+          <a href="#hero" class="footer-link">Home</a>
+          <a href="#lessons-view" class="footer-link">Lessons</a>
+          <a href="#teachers-view" class="footer-link">Teachers</a>
+          <a href="#benefits-view" class="footer-link">About</a>
         </nav>
         <p class="footer-credit">
           Photography: royalty-free images, see <a href="images/CREDITS.md" class="footer-link">credits</a>.

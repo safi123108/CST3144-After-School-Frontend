@@ -50,6 +50,15 @@
 
 html { scroll-behavior: smooth; }
 
+[v-cloak] { display: none; }
+
+#hero,
+#benefits-view,
+#lessons-view,
+#teachers-view {
+  scroll-margin-top: var(--header-h);
+}
+
 body {
   margin: 0;
   background: var(--ivory);
@@ -1404,14 +1413,6 @@ button { font-family: inherit; }
   .benefits-container { grid-template-columns: repeat(2, 1fr); gap: 22px; }
 }
 
-/* Header row must never overflow between the nav-hiding breakpoint (640)
-   and desktop widths: drop the "Cart" word and tighten the gaps. */
-@media (max-width: 860px) {
-  .header-container { gap: 12px; }
-  .cart-label { display: none; }
-  .cart-btn { padding: 0 13px; }
-}
-
 @media (max-width: 900px) {
   .hero-container {
     grid-template-columns: 1fr;
@@ -1433,6 +1434,14 @@ button { font-family: inherit; }
   .view-lessons-btn { width: 100%; }
 }
 
+/* Header row must never overflow between the nav-hiding breakpoint (680)
+   and desktop widths: drop the "Cart" word and tighten the gaps. */
+@media (max-width: 860px) {
+  .header-container { gap: 12px; }
+  .cart-label { display: none; }
+  .cart-btn { padding: 0 13px; }
+}
+
 /* --------------------------------------------------------------------------
    Responsive — small tablet / large phone
    -------------------------------------------------------------------------- */
@@ -1447,17 +1456,12 @@ button { font-family: inherit; }
 }
 
 /* Between phone and small-tablet widths the full nav row cannot fit next to
-   the logo and cart button, so the (decorative) nav links step out here.
-   They return above 680px and are fully hidden again below 640px. */
+   the logo and cart button, so the nav links collapse here. */
 @media (max-width: 680px) {
   .main-nav { display: none; }
 }
 
 @media (max-width: 640px) {
-  .main-nav { display: none; }
-  .cart-label { display: none; }
-  .cart-btn { padding: 0 13px; }
-
   .benefits-container { grid-template-columns: 1fr; padding: 28px 24px; }
 
   .lessons-grid { grid-template-columns: 1fr; }
@@ -1496,7 +1500,7 @@ button { font-family: inherit; }
 @media (max-width: 480px) {
   :root { --header-h: 64px; }
 
-  .header-container { padding: 0 16px; gap: 12px; }
+  .header-container { padding: 0 16px; }
   .lessons-container,
   .teachers-container { padding: 0 16px; }
   .hero-container { padding: 0 16px; }
@@ -1518,9 +1522,6 @@ button { font-family: inherit; }
   .lesson-actions { flex-direction: column; }
   .add-to-cart-btn,
   .enrolment-btn { width: 100%; flex: 1 1 auto; }
-
-  .teacher-card { flex-wrap: wrap; }
-  .view-lessons-btn { width: 100%; }
 
   .cart-content { padding: 18px 16px 26px; }
   .cart-header { padding: 16px; }
