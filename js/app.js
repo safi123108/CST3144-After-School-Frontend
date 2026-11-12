@@ -1,5 +1,7 @@
 const { createApp, ref, onMounted, computed } = Vue;
 
+const API_BASE_URL = 'http://localhost:3000';
+
 const app = createApp({
   setup() {
     const lessons = ref([]);
@@ -38,7 +40,7 @@ const app = createApp({
 
     const fetchLessons = async () => {
       try {
-        const response = await fetch('http://localhost:3000/lessons');
+        const response = await fetch(`${API_BASE_URL}/lessons`);
         if (!response.ok) {
           throw new Error(`Failed to load lessons: ${response.status}`);
         }
@@ -64,7 +66,7 @@ const app = createApp({
       searchError.value = null;
 
       try {
-        const response = await fetch(`http://localhost:3000/lessons/search?q=${encodeURIComponent(q)}`);
+        const response = await fetch(`${API_BASE_URL}/lessons/search?q=${encodeURIComponent(q)}`);
         if (!response.ok) {
           const errorData = await response.json().catch(() => ({}));
           throw new Error(errorData.message || `Search failed: ${response.status}`);
@@ -90,7 +92,7 @@ const app = createApp({
       teachersLoading.value = true;
       teachersError.value = null;
       try {
-        const response = await fetch('http://localhost:3000/teachers');
+        const response = await fetch(`${API_BASE_URL}/teachers`);
         if (!response.ok) {
           const errorData = await response.json().catch(() => ({}));
           throw new Error(errorData.message || `Failed to load teachers: ${response.status}`);
@@ -110,7 +112,7 @@ const app = createApp({
       teacherLessonsError.value = null;
 
       try {
-        const response = await fetch(`http://localhost:3000/teachers/${encodeURIComponent(teacherId)}/lessons`);
+        const response = await fetch(`${API_BASE_URL}/teachers/${encodeURIComponent(teacherId)}/lessons`);
         if (!response.ok) {
           const errorData = await response.json().catch(() => ({}));
           throw new Error(errorData.message || `Failed to load teacher lessons: ${response.status}`);
@@ -142,7 +144,7 @@ const app = createApp({
       };
 
       try {
-        const response = await fetch(`http://localhost:3000/enrolment/${encodeURIComponent(lessonId)}`);
+        const response = await fetch(`${API_BASE_URL}/enrolment/${encodeURIComponent(lessonId)}`);
         const result = await response.json().catch(() => ({}));
         if (!response.ok) {
           throw new Error(result.message || `Failed to load enrolment: ${response.status}`);
@@ -297,7 +299,7 @@ const app = createApp({
 
       try {
         // Step 1: POST /orders
-        const response = await fetch('http://localhost:3000/orders', {
+        const response = await fetch(`${API_BASE_URL}/orders`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json'
@@ -329,7 +331,7 @@ const app = createApp({
             continue;
           }
 
-          const putResponse = await fetch(`http://localhost:3000/lessons/${item.lessonId}`, {
+          const putResponse = await fetch(`${API_BASE_URL}/lessons/${item.lessonId}`, {
             method: 'PUT',
             headers: {
               'Content-Type': 'application/json'
@@ -370,7 +372,7 @@ const app = createApp({
           // Cancel unconfirmed items via DELETE /orders/:orderId
           let cancellationMessage = '';
           try {
-            const deleteResponse = await fetch(`http://localhost:3000/orders/${orderId.value}`, {
+            const deleteResponse = await fetch(`${API_BASE_URL}/orders/${orderId.value}`, {
               method: 'DELETE'
             });
             const deleteData = await deleteResponse.json().catch(() => ({}));
