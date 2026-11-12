@@ -52,16 +52,12 @@ const app = createApp({
       }
     };
 
-    const onSearchInput = async () => {
-      const q = searchQuery.value.trim();
+    const SEARCH_DEBOUNCE_MS = 250;
+    let searchDebounceTimer = null;
+    let lastSearchedQuery = '';
 
-      if (!q) {
-        searchResults.value = null;
-        searchError.value = null;
-        searchLoading.value = false;
-        return;
-      }
-
+    const executeSearch = async (q) => {
+      lastSearchedQuery = q;
       searchLoading.value = true;
       searchError.value = null;
 
@@ -79,6 +75,9 @@ const app = createApp({
         });
       } catch (err) {
         if (searchQuery.value.trim() !== q) return;
+        if (lastSearchedQuery === q) {
+          lastSearchedQuery = '';
+        }
         searchError.value = err.message || 'Failed to search lessons.';
         searchResults.value = null;
       } finally {
@@ -86,6 +85,39 @@ const app = createApp({
           searchLoading.value = false;
         }
       }
+    };
+
+    const onSearchInput = () => {
+      if (searchDebounceTimer !== null) {
+        clearTimeout(searchDebounceTimer);
+        searchDebounceTimer = null;
+      }
+
+      const q = searchQuery.value.trim();
+
+      if (!q) {
+        lastSearchedQuery = '';
+        searchResults.value = null;
+        searchError.value = null;
+        searchLoading.value = false;
+        return;
+      }
+
+      // Skip duplicate API requests when trailing whitespace leaves the trimmed query unchanged.
+      if (
+        q === lastSearchedQuery &&
+        (searchResults.value !== null || searchLoading.value) &&
+        !searchError.value
+      ) {
+        return;
+      }
+
+      searchDebounceTimer = setTimeout(() => {
+        searchDebounceTimer = null;
+        if (searchQuery.value.trim() === q) {
+          executeSearch(q);
+        }
+      }, SEARCH_DEBOUNCE_MS);
     };
 
     const fetchTeachers = async () => {
@@ -106,6 +138,15 @@ const app = createApp({
     };
 
     const fetchTeacherLessons = async (teacherId) => {
+      // Collapse the active teacher panel instead of re-fetching when clicked again.
+      if (selectedTeacherId.value === teacherId) {
+        selectedTeacherId.value = null;
+        teacherLessons.value = [];
+        teacherLessonsLoading.value = false;
+        teacherLessonsError.value = null;
+        return;
+      }
+
       selectedTeacherId.value = teacherId;
       teacherLessons.value = [];
       teacherLessonsLoading.value = true;
@@ -159,6 +200,79 @@ const app = createApp({
           [lessonId]: { loading: false, error: err.message || 'Failed to load enrolment.', data: null }
         };
       }
+    };
+
+    const refreshLoadedEnrolments = async (lessonIds) => {
+      const uniqueIds = [...new Set(lessonIds)].filter((lessonId) =>
+        Object.prototype.hasOwnProperty.call(enrolmentByLesson.value, lessonId)
+      );
+      if (uniqueIds.length === 0) return;
+      await Promise.all(uniqueIds.map((lessonId) => fetchEnrolment(lessonId)));
+    };
+
+    const LESSON_IMAGE_FALLBACK =
+      'data:image/svg+xml;charset=utf-8,' +
+      encodeURIComponent(
+        '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 300" role="img" aria-label="Lesson image unavailable">' +
+          '<rect width="400" height="300" fill="#edf2ed"/>' +
+          '<rect x="148" y="88" width="104" height="82" rx="10" fill="#d8e4da" stroke="#3f6348" stroke-width="4"/>' +
+          '<path d="M168 150l24-26 20 18 16-14 24 22z" fill="#3f6348"/>' +
+          '<circle cx="178" cy="114" r="9" fill="#3f6348"/>' +
+          '<text x="200" y="206" text-anchor="middle" font-family="sans-serif" font-size="18" fill="#1e2421">Lesson image unavailable</text>' +
+        '</svg>'
+      );
+
+    const TEACHER_IMAGE_FALLBACK =
+      'data:image/svg+xml;charset=utf-8,' +
+      encodeURIComponent(
+        '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 160 160" role="img" aria-label="Teacher avatar">' +
+          '<rect width="160" height="160" fill="#edf2ed"/>' +
+          '<circle cx="80" cy="60" r="28" fill="#3f6348"/>' +
+          '<path d="M32 142c8-28 28-42 48-42s40 14 48 42z" fill="#3f6348"/>' +
+        '</svg>'
+      );
+
+    const getLessonImageSrc = (lesson) => {
+      const rawImage = lesson && typeof lesson.image === 'string' ? lesson.image.trim() : '';
+      if (!rawImage) {
+        return LESSON_IMAGE_FALLBACK;
+      }
+      // Normalize legacy .png extensions stored in lesson records to .jpg assets in frontend/images.
+      const normalized = rawImage.replace(/\.png$/i, '.jpg');
+      return `images/${normalized}`;
+    };
+
+    const getTeacherImageSrc = (teacher) => {
+      const rawName = teacher && typeof teacher.name === 'string' ? teacher.name.trim() : '';
+      if (!rawName) {
+        return TEACHER_IMAGE_FALLBACK;
+      }
+      const firstName = rawName.split(/\s+/)[0].toLowerCase();
+      if (!firstName) {
+        return TEACHER_IMAGE_FALLBACK;
+      }
+      return `images/teachers/${encodeURIComponent(firstName)}.jpg`;
+    };
+
+    const applyImageFallback = (event, fallbackSrc) => {
+      const img = event && event.target;
+      if (!img) return;
+      // Prevent repeated error events from looping if fallback assignment fails.
+      if ((img.dataset && img.dataset.fallbackApplied === 'true') || img.src === fallbackSrc) {
+        return;
+      }
+      if (img.dataset) {
+        img.dataset.fallbackApplied = 'true';
+      }
+      img.src = fallbackSrc;
+    };
+
+    const onLessonImageError = (event) => {
+      applyImageFallback(event, LESSON_IMAGE_FALLBACK);
+    };
+
+    const onTeacherImageError = (event) => {
+      applyImageFallback(event, TEACHER_IMAGE_FALLBACK);
     };
 
     const addToCart = (lesson) => {
@@ -338,10 +452,14 @@ const app = createApp({
         }
 
         const result = await response.json();
+        if (!result || !result.order || !result.order._id) {
+          throw new Error('Order response did not include an order ID.');
+        }
         orderId.value = result.order._id;
 
         // Step 2: Confirm each lesson via PUT sequentially
         const failedItems = [];
+        const confirmedLessonIds = [];
 
         for (const item of cart.value) {
           const lesson = lessons.value.find(l => l._id === item.lessonId);
@@ -356,35 +474,51 @@ const app = createApp({
             continue;
           }
 
-          const putResponse = await fetch(`${API_BASE_URL}/lessons/${item.lessonId}`, {
-            method: 'PUT',
-            headers: {
-              'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-              orderId: orderId.value,
-              space: newSpace
-            })
-          });
+          try {
+            const putResponse = await fetch(`${API_BASE_URL}/lessons/${encodeURIComponent(item.lessonId)}`, {
+              method: 'PUT',
+              headers: {
+                'Content-Type': 'application/json'
+              },
+              body: JSON.stringify({
+                orderId: orderId.value,
+                space: newSpace
+              })
+            });
 
-          if (!putResponse.ok) {
-            const errorData = await putResponse.json().catch(() => ({}));
-            const message = errorData.message || errorData.error || 'No error message returned.';
-            console.error('PUT confirmation failed', {
+            if (!putResponse.ok) {
+              const errorData = await putResponse.json().catch(() => ({}));
+              const message = errorData.message || errorData.error || 'No error message returned.';
+              console.error('PUT confirmation failed', {
+                orderId: orderId.value,
+                lessonId: item.lessonId,
+                status: putResponse.status,
+                message
+              });
+              failedItems.push({
+                lessonId: item.lessonId,
+                status: putResponse.status,
+                error: message
+              });
+              continue;
+            }
+
+            await putResponse.json().catch(() => ({}));
+            confirmedLessonIds.push(item.lessonId);
+          } catch (putErr) {
+            const message = putErr && putErr.message ? putErr.message : 'Request failed.';
+            console.error('PUT confirmation request failed', {
               orderId: orderId.value,
               lessonId: item.lessonId,
-              status: putResponse.status,
+              status: null,
               message
             });
             failedItems.push({
               lessonId: item.lessonId,
-              status: putResponse.status,
+              status: null,
               error: message
             });
-            continue;
           }
-
-          await putResponse.json().catch(() => ({}));
         }
 
         // Step 3: Handle results
@@ -397,7 +531,7 @@ const app = createApp({
           // Cancel unconfirmed items via DELETE /orders/:orderId
           let cancellationMessage = '';
           try {
-            const deleteResponse = await fetch(`${API_BASE_URL}/orders/${orderId.value}`, {
+            const deleteResponse = await fetch(`${API_BASE_URL}/orders/${encodeURIComponent(orderId.value)}`, {
               method: 'DELETE'
             });
             const deleteData = await deleteResponse.json().catch(() => ({}));
@@ -420,13 +554,22 @@ const app = createApp({
             cancellationMessage = ` Cancellation request failed: ${deleteError}; order ${orderId.value} may remain pending.`;
           }
 
-          const confirmedCount = cart.value.length - failedItems.length;
-          orderError.value = `Order partially placed: ${confirmedCount} of ${cart.value.length} items confirmed. ${putFailureDetails}.${cancellationMessage}`;
+          const confirmedCount = confirmedLessonIds.length;
+          if (confirmedCount > 0) {
+            // Keep only failed items so a retry does not re-submit confirmed items.
+            const failedIds = new Set(failedItems.map((f) => f.lessonId));
+            cart.value = cart.value.filter((item) => failedIds.has(item.lessonId));
+            await refreshLoadedEnrolments(confirmedLessonIds);
+            orderError.value = `Order partially placed: ${confirmedCount} of ${confirmedCount + failedItems.length} items confirmed. ${putFailureDetails}.${cancellationMessage}`;
+          } else {
+            orderError.value = `Order could not be confirmed: ${putFailureDetails}.${cancellationMessage}`;
+          }
         } else {
           // Order fully confirmed by the backend: reset the cart so the badge,
           // item list and totals return to their empty state. This only runs on
           // the all-confirmed path - failed orders keep the cart intact above.
           cart.value = [];
+          await refreshLoadedEnrolments(confirmedLessonIds);
           orderConfirmed.value = true;
         }
       } catch (err) {
@@ -495,6 +638,10 @@ const app = createApp({
       fetchTeacherLessons,
       enrolmentByLesson,
       fetchEnrolment,
+      getLessonImageSrc,
+      getTeacherImageSrc,
+      onLessonImageError,
+      onTeacherImageError,
       sortCriteria,
       sortedLessons,
       onSearchInput,

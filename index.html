@@ -81,10 +81,10 @@
 
         <div class="hero-visual">
           <div class="hero-image">
-            <img src="images/hero.jpg" alt="Children learning together around a table in a bright classroom" class="hero-img">
+            <img src="images/hero.jpg" alt="Children learning together around a table in a bright classroom" class="hero-img" @error="onLessonImageError">
           </div>
           <div class="hero-image-secondary">
-            <img src="images/science.jpg" alt="Two children exploring science with a microscope in class" class="hero-img-small">
+            <img src="images/science.jpg" alt="Two children exploring science with a microscope in class" class="hero-img-small" @error="onLessonImageError">
           </div>
           <div class="hero-float">
             <span class="hero-float-dot" aria-hidden="true"></span>
@@ -206,10 +206,11 @@
           <article v-for="lesson in sortedLessons" :key="lesson._id" class="lesson-card">
             <div class="lesson-card-image">
               <img
-                :src="`images/${lesson.image.replace('.png', '.jpg')}`"
-                :alt="lesson.topic"
+                :src="getLessonImageSrc(lesson)"
+                :alt="lesson.topic || 'Lesson'"
                 class="lesson-image"
                 loading="lazy"
+                @error="onLessonImageError"
               >
             </div>
             <div class="lesson-card-content">
@@ -273,10 +274,11 @@
           <div v-for="teacher in teachers" :key="teacher._id" class="teacher-card">
             <div class="teacher-photo">
               <img
-                :src="`images/teachers/${teacher.name.split(' ')[0].toLowerCase()}.jpg`"
-                :alt="teacher.name"
+                :src="getTeacherImageSrc(teacher)"
+                :alt="teacher.name || 'Teacher'"
                 class="teacher-img"
                 loading="lazy"
+                @error="onTeacherImageError"
               >
             </div>
             <div class="teacher-info">
@@ -310,10 +312,11 @@
             <article v-for="lesson in teacherLessons" :key="lesson._id" class="lesson-card">
               <div class="lesson-card-image">
                 <img
-                  :src="`images/${lesson.image.replace('.png', '.jpg')}`"
-                  :alt="lesson.topic"
+                  :src="getLessonImageSrc(lesson)"
+                  :alt="lesson.topic || 'Lesson'"
                   class="lesson-image"
                   loading="lazy"
+                  @error="onLessonImageError"
                 >
               </div>
               <div class="lesson-card-content">
