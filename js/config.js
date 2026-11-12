@@ -13,7 +13,7 @@
 
   globalScope.APP_CONFIG = Object.freeze({
     localApiBaseUrl: 'http://localhost:3000',
-    productionApiBaseUrl: '',
+    productionApiBaseUrl: 'https://cst3144-after-school-backend.onrender.com',
     ...existingConfig
   });
 })(typeof globalThis !== 'undefined' ? globalThis : window);
