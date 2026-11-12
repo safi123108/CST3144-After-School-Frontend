@@ -396,6 +396,10 @@ const app = createApp({
           const confirmedCount = cart.value.length - failedItems.length;
           orderError.value = `Order partially placed: ${confirmedCount} of ${cart.value.length} items confirmed. ${putFailureDetails}.${cancellationMessage}`;
         } else {
+          // Order fully confirmed by the backend: reset the cart so the badge,
+          // item list and totals return to their empty state. This only runs on
+          // the all-confirmed path - failed orders keep the cart intact above.
+          cart.value = [];
           orderConfirmed.value = true;
         }
       } catch (err) {
