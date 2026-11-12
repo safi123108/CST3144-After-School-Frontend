@@ -164,6 +164,10 @@ const app = createApp({
     const addToCart = (lesson) => {
       if (lesson.space <= 0) return;
 
+      if (orderConfirmed.value) {
+        resetOrderState();
+      }
+
       lesson.space -= 1;
 
       const existing = cart.value.find(item => item.lessonId === lesson._id);
@@ -206,8 +210,7 @@ const app = createApp({
       }, 0);
     });
 
-    const sortCriteria = ref(null);
-    const sortDirection = ref('asc');
+    const sortCriteria = ref('');
 
     const displayedLessons = computed(() => {
       return searchResults.value !== null ? searchResults.value : lessons.value;
@@ -233,32 +236,54 @@ const app = createApp({
       });
     });
 
-    const validateName = () => {
-      const name = customerName.value.trim();
-      if (!name) {
-        nameError.value = 'Customer name is required.';
+    const NAME_REGEX = /^[a-zA-Z\s]+$/;
+    const PHONE_REGEX = /^\d+$/;
+
+    const isFieldValid = (value, pattern) => {
+      const trimmed = value.trim();
+      return trimmed.length > 0 && pattern.test(trimmed);
+    };
+
+    const isFormValid = computed(() => {
+      return isFieldValid(customerName.value, NAME_REGEX) && isFieldValid(customerPhone.value, PHONE_REGEX);
+    });
+
+    const validateField = (inputRef, errorRef, pattern, emptyMessage, invalidMessage) => {
+      const trimmed = inputRef.value.trim();
+      if (!trimmed) {
+        errorRef.value = emptyMessage;
         return false;
       }
-      if (!/^[a-zA-Z\s]+$/.test(name)) {
-        nameError.value = 'Name must contain only letters and spaces.';
+      if (!pattern.test(trimmed)) {
+        errorRef.value = invalidMessage;
         return false;
       }
-      nameError.value = null;
+      errorRef.value = null;
       return true;
     };
 
-    const validatePhone = () => {
-      const phone = customerPhone.value.trim();
-      if (!phone) {
-        phoneError.value = 'Phone number is required.';
-        return false;
-      }
-      if (!/^\d+$/.test(phone)) {
-        phoneError.value = 'Phone must contain only digits.';
-        return false;
-      }
-      phoneError.value = null;
-      return true;
+    const validateName = () => validateField(
+      customerName,
+      nameError,
+      NAME_REGEX,
+      'Customer name is required.',
+      'Name must contain only letters and spaces.'
+    );
+
+    const validatePhone = () => validateField(
+      customerPhone,
+      phoneError,
+      PHONE_REGEX,
+      'Phone number is required.',
+      'Phone must contain only digits.'
+    );
+
+    const onNameInput = () => {
+      if (nameError.value) validateName();
+    };
+
+    const onPhoneInput = () => {
+      if (phoneError.value) validatePhone();
     };
 
     const validateNameOnBlur = () => {
@@ -276,7 +301,7 @@ const app = createApp({
     };
 
     const prepareOrder = () => {
-      if (!validateForm()) return null;
+      if (cart.value.length === 0 || !validateForm()) return null;
 
       return {
         name: customerName.value.trim(),
@@ -411,7 +436,7 @@ const app = createApp({
       }
     };
 
-    const clearOrderConfirmation = () => {
+    const resetOrderState = () => {
       orderConfirmed.value = false;
       orderId.value = null;
       customerName.value = '';
@@ -421,8 +446,17 @@ const app = createApp({
       orderError.value = null;
     };
 
+    const clearOrderConfirmation = () => {
+      resetOrderState();
+      view.value = 'lessons';
+    };
+
     const toggleCart = () => {
-      view.value = view.value === 'lessons' ? 'cart' : 'lessons';
+      const nextView = view.value === 'lessons' ? 'cart' : 'lessons';
+      if (orderConfirmed.value) {
+        resetOrderState();
+      }
+      view.value = nextView;
     };
 
     onMounted(() => {
@@ -467,6 +501,9 @@ const app = createApp({
       addToCart,
       removeFromCart,
       toggleCart,
+      isFormValid,
+      onNameInput,
+      onPhoneInput,
       validateName,
       validatePhone,
       validateNameOnBlur,

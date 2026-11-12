@@ -36,7 +36,7 @@
           <button
             class="cart-btn"
             @click="toggleCart"
-            :disabled="cart.length === 0 && !orderConfirmed"
+            :disabled="cart.length === 0 && !orderConfirmed && view !== 'cart'"
             aria-label="Shopping cart"
           >
             <span class="cart-icon" aria-hidden="true">
@@ -407,6 +407,7 @@
               type="text"
               id="customer-name"
               v-model="customerName"
+              @input="onNameInput"
               @blur="validateNameOnBlur"
               :class="{ 'error-input': nameError }"
               placeholder="Enter your name"
@@ -419,6 +420,7 @@
               type="tel"
               id="customer-phone"
               v-model="customerPhone"
+              @input="onPhoneInput"
               @blur="validatePhoneOnBlur"
               :class="{ 'error-input': phoneError }"
               placeholder="Enter your phone number"
@@ -428,7 +430,7 @@
           <p v-if="orderError" class="form-error">{{ orderError }}</p>
           <button
             class="checkout-btn"
-            :disabled="cart.length === 0 || !validateForm() || submitting"
+            :disabled="cart.length === 0 || !isFormValid || submitting"
             @click="handleCheckout"
           >
             {{ submitting ? 'Placing Order...' : 'Place Order' }}
