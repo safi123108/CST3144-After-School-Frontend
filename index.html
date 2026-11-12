@@ -3,6 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="After-School App — premium after-school lessons in maths, science, english, art, music and more.">
   <title>CST3144 After-School App</title>
   <link rel="stylesheet" href="css/style.css">
   <script src="https://unpkg.com/vue@3/dist/vue.global.js" defer></script>
@@ -13,13 +14,18 @@
     <header class="site-header">
       <div class="header-container">
         <div class="logo">
-          <span class="logo-icon">📖</span>
+          <span class="logo-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M4 5.5A2.5 2.5 0 0 1 6.5 3H12v16H6.5A2.5 2.5 0 0 0 4 21.5z"></path>
+              <path d="M20 5.5A2.5 2.5 0 0 0 17.5 3H12v16h5.5A2.5 2.5 0 0 1 20 21.5z"></path>
+            </svg>
+          </span>
           <div class="brand">
             <span class="logo-text">After-School App</span>
             <span class="logo-tagline">Learn · Practice · Excel</span>
           </div>
         </div>
-        <nav class="main-nav">
+        <nav class="main-nav" aria-label="Main navigation">
           <a href="#" class="nav-link">Home</a>
           <a href="#" class="nav-link active">Lessons</a>
           <a href="#" class="nav-link">About</a>
@@ -27,8 +33,20 @@
           <a href="#" class="nav-link">FAQ</a>
         </nav>
         <div class="header-actions">
-          <button class="cart-btn" @click="toggleCart" aria-label="Shopping cart">
-            <span class="cart-icon">🛒</span>
+          <button
+            class="cart-btn"
+            @click="toggleCart"
+            :disabled="cart.length === 0 && !orderConfirmed"
+            aria-label="Shopping cart"
+          >
+            <span class="cart-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M3 4h2l2.4 10.4a2 2 0 0 0 2 1.6h7.7a2 2 0 0 0 2-1.55L21 8H6"></path>
+                <circle cx="10" cy="20" r="1.4"></circle>
+                <circle cx="18" cy="20" r="1.4"></circle>
+              </svg>
+            </span>
+            <span class="cart-label">Cart</span>
             <span class="cart-count">{{ cartCount }}</span>
           </button>
         </div>
@@ -39,15 +57,39 @@
       <div class="hero-container">
         <div class="hero-content">
           <span class="hero-badge">Your Learning Partner</span>
-          <h1 class="hero-title">Learn Today, Excel Tomorrow</h1>
-          <p class="hero-subtitle">Premium online lessons for school subjects, designed to help you learn better, practice more and achieve more.</p>
+          <h1 class="hero-title">Learn today,<br><em>excel tomorrow.</em></h1>
+          <p class="hero-subtitle">Premium after-school lessons for school subjects, designed to help you learn better, practice more and achieve more.</p>
+
           <div class="hero-search">
-            <input type="text" v-model="searchQuery" @input="onSearchInput" placeholder="Search for lessons..." class="hero-search-input">
+            <input
+              type="text"
+              v-model="searchQuery"
+              @input="onSearchInput"
+              placeholder="Search for lessons..."
+              class="hero-search-input"
+              aria-label="Search for lessons"
+            >
             <button class="hero-search-btn" onclick="document.getElementById('lessons-view').scrollIntoView({ behavior: 'smooth' })">Browse Lessons</button>
           </div>
+
+          <ul class="hero-trust">
+            <li>Search every subject</li>
+            <li>Sort by topic, price or spaces</li>
+            <li>See live enrolment numbers</li>
+          </ul>
         </div>
-        <div class="hero-image">
-          <img src="http://localhost:3000/images/hero.svg" alt="Student learning with laptop" class="hero-img">
+
+        <div class="hero-visual">
+          <div class="hero-image">
+            <img src="images/hero.jpg" alt="Children learning together around a table in a bright classroom" class="hero-img">
+          </div>
+          <div class="hero-image-secondary">
+            <img src="images/science.jpg" alt="Two children exploring science with a microscope in class" class="hero-img-small">
+          </div>
+          <div class="hero-float">
+            <span class="hero-float-dot" aria-hidden="true"></span>
+            Learn · Practice · Excel
+          </div>
         </div>
       </div>
     </section>
@@ -55,24 +97,52 @@
     <section class="benefits">
       <div class="benefits-container">
         <div class="benefit-item">
-          <span class="benefit-icon">📚</span>
-          <h3>Expert Instructors</h3>
-          <p>Learn from the best</p>
+          <span class="benefit-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M4 19.5V6a2 2 0 0 1 2-2h13v15H6a2 2 0 0 0-2 2z"></path>
+              <path d="M9 8h6M9 12h6"></path>
+            </svg>
+          </span>
+          <div class="benefit-text">
+            <h3>Expert Instructors</h3>
+            <p>Learn from the best</p>
+          </div>
         </div>
         <div class="benefit-item">
-          <span class="benefit-icon">✓</span>
-          <h3>Trusted & Secure</h3>
-          <p>Shop with confidence</p>
+          <span class="benefit-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M12 3l7.5 3v5.2c0 4.4-3.1 8.4-7.5 9.8-4.4-1.4-7.5-5.4-7.5-9.8V6z"></path>
+              <path d="M9 12l2.2 2.2L15.5 10"></path>
+            </svg>
+          </span>
+          <div class="benefit-text">
+            <h3>Trusted &amp; Secure</h3>
+            <p>Shop with confidence</p>
+          </div>
         </div>
         <div class="benefit-item">
-          <span class="benefit-icon">⚡</span>
-          <h3>Instant Access</h3>
-          <p>Start learning immediately</p>
+          <span class="benefit-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M13 2L4 14h7l-1 8 9-12h-7z"></path>
+            </svg>
+          </span>
+          <div class="benefit-text">
+            <h3>Instant Access</h3>
+            <p>Start learning immediately</p>
+          </div>
         </div>
         <div class="benefit-item">
-          <span class="benefit-icon">💬</span>
-          <h3>Dedicated Support</h3>
-          <p>We're here to help</p>
+          <span class="benefit-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M21 12a8 8 0 1 1-3.2-6.4"></path>
+              <path d="M4 20l1.6-3.6"></path>
+              <path d="M9.5 11h.01M14.5 11h.01"></path>
+            </svg>
+          </span>
+          <div class="benefit-text">
+            <h3>Dedicated Support</h3>
+            <p>We're here to help</p>
+          </div>
         </div>
       </div>
     </section>
@@ -80,6 +150,7 @@
     <section id="lessons-view" class="lessons-section">
       <div class="lessons-container">
         <div class="section-header">
+          <span class="section-eyebrow">Browse the catalogue</span>
           <h2>Popular Lessons</h2>
           <p class="section-subtitle">Choose from our wide range of subjects</p>
           <div class="lessons-controls">
@@ -92,7 +163,7 @@
               aria-label="Search lessons"
             >
             <div class="sort-controls">
-              <select v-model="sortCriteria" class="sort-select">
+              <select v-model="sortCriteria" class="sort-select" aria-label="Sort lessons">
                 <option value="">Sort by: Default</option>
                 <option value="topic:asc">Sort by: Topic (A-Z)</option>
                 <option value="topic:desc">Sort by: Topic (Z-A)</option>
@@ -135,26 +206,35 @@
           <article v-for="lesson in sortedLessons" :key="lesson._id" class="lesson-card">
             <div class="lesson-card-image">
               <img
-                :src="`http://localhost:3000/images/${lesson.image.replace('.png', '.svg')}`"
+                :src="`images/${lesson.image.replace('.png', '.jpg')}`"
                 :alt="lesson.topic"
                 class="lesson-image"
+                loading="lazy"
               >
             </div>
-<div class="lesson-card-content">
+            <div class="lesson-card-content">
               <h3 class="lesson-title">{{ lesson.topic }}</h3>
-              <p class="lesson-location">{{ lesson.location }}</p>
+              <p class="lesson-location">
+                <svg class="location-pin" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <path d="M12 21s7-5.6 7-11a7 7 0 1 0-14 0c0 5.4 7 11 7 11z"></path>
+                  <circle cx="12" cy="10" r="2.5"></circle>
+                </svg>
+                <span>{{ lesson.location }}</span>
+              </p>
               <div class="lesson-meta">
                 <div class="lesson-price">$ {{ lesson.price }}</div>
                 <div class="lesson-spaces-badge">{{ lesson.space }} spaces left</div>
               </div>
-              <button
-                v-bind:disabled="lesson.space <= 0"
-                class="add-to-cart-btn"
-                @click="addToCart(lesson)"
-              >
-                {{ lesson.space <= 0 ? 'Fully Booked' : 'Add to Cart' }}
-              </button>
-              <button class="enrolment-btn" @click="fetchEnrolment(lesson._id)">View Enrolment</button>
+              <div class="lesson-actions">
+                <button
+                  v-bind:disabled="lesson.space <= 0"
+                  class="add-to-cart-btn"
+                  @click="addToCart(lesson)"
+                >
+                  {{ lesson.space <= 0 ? 'Fully Booked' : 'Add to Cart' }}
+                </button>
+                <button class="enrolment-btn" @click="fetchEnrolment(lesson._id)">View Enrolment</button>
+              </div>
               <div class="enrolment-info">
                 <p v-if="enrolmentByLesson[lesson._id] && enrolmentByLesson[lesson._id].loading">Loading enrolment...</p>
                 <p v-else-if="enrolmentByLesson[lesson._id] && enrolmentByLesson[lesson._id].error" class="error-message">{{ enrolmentByLesson[lesson._id].error }}</p>
@@ -172,6 +252,7 @@
     <section id="teachers-view" class="teachers-section">
       <div class="teachers-container">
         <div class="section-header">
+          <span class="section-eyebrow">Meet the team</span>
           <h2>Teachers</h2>
           <p class="section-subtitle">View lessons by teacher</p>
         </div>
@@ -190,6 +271,14 @@
 
         <div v-else class="teachers-list">
           <div v-for="teacher in teachers" :key="teacher._id" class="teacher-card">
+            <div class="teacher-photo">
+              <img
+                :src="`images/teachers/${teacher.name.split(' ')[0].toLowerCase()}.jpg`"
+                :alt="teacher.name"
+                class="teacher-img"
+                loading="lazy"
+              >
+            </div>
             <div class="teacher-info">
               <h3 class="teacher-name">{{ teacher.name }}</h3>
               <p v-if="teacher.lessonIds" class="teacher-meta">Lessons: {{ teacher.lessonIds.length }}</p>
@@ -221,26 +310,35 @@
             <article v-for="lesson in teacherLessons" :key="lesson._id" class="lesson-card">
               <div class="lesson-card-image">
                 <img
-                  :src="`http://localhost:3000/images/${lesson.image.replace('.png', '.svg')}`"
+                  :src="`images/${lesson.image.replace('.png', '.jpg')}`"
                   :alt="lesson.topic"
                   class="lesson-image"
+                  loading="lazy"
                 >
               </div>
               <div class="lesson-card-content">
                 <h3 class="lesson-title">{{ lesson.topic }}</h3>
-                <p class="lesson-location">{{ lesson.location }}</p>
+                <p class="lesson-location">
+                  <svg class="location-pin" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <path d="M12 21s7-5.6 7-11a7 7 0 1 0-14 0c0 5.4 7 11 7 11z"></path>
+                    <circle cx="12" cy="10" r="2.5"></circle>
+                  </svg>
+                  <span>{{ lesson.location }}</span>
+                </p>
                 <div class="lesson-meta">
                   <div class="lesson-price">$ {{ lesson.price }}</div>
                   <div class="lesson-spaces-badge">{{ lesson.space }} spaces left</div>
                 </div>
-                <button
-                  v-bind:disabled="lesson.space <= 0"
-                  class="add-to-cart-btn"
-                  @click="addToCart(lesson)"
-                >
-                  {{ lesson.space <= 0 ? 'Fully Booked' : 'Add to Cart' }}
-                </button>
-                <button class="enrolment-btn" @click="fetchEnrolment(lesson._id)">View Enrolment</button>
+                <div class="lesson-actions">
+                  <button
+                    v-bind:disabled="lesson.space <= 0"
+                    class="add-to-cart-btn"
+                    @click="addToCart(lesson)"
+                  >
+                    {{ lesson.space <= 0 ? 'Fully Booked' : 'Add to Cart' }}
+                  </button>
+                  <button class="enrolment-btn" @click="fetchEnrolment(lesson._id)">View Enrolment</button>
+                </div>
                 <div class="enrolment-info">
                   <p v-if="enrolmentByLesson[lesson._id] && enrolmentByLesson[lesson._id].loading">Loading enrolment...</p>
                   <p v-else-if="enrolmentByLesson[lesson._id] && enrolmentByLesson[lesson._id].error" class="error-message">{{ enrolmentByLesson[lesson._id].error }}</p>
@@ -259,11 +357,21 @@
     <section id="cart-view" class="cart-panel" :class="{ open: view === 'cart' }">
       <div class="cart-header">
         <h2>Your Cart</h2>
-        <button class="close-cart-btn" @click="toggleCart" aria-label="Close cart">✕</button>
+        <button class="close-cart-btn" @click="toggleCart" aria-label="Close cart">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" aria-hidden="true">
+            <path d="M6 6l12 12M18 6L6 18"></path>
+          </svg>
+        </button>
       </div>
       <div class="cart-content">
-        <div v-if="cart.length === 0" class="cart-empty">
-          <span class="empty-icon">🛒</span>
+        <div v-if="cart.length === 0 && !orderConfirmed" class="cart-empty">
+          <span class="empty-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M3 4h2l2.4 10.4a2 2 0 0 0 2 1.6h7.7a2 2 0 0 0 2-1.55L21 8H6"></path>
+              <circle cx="10" cy="20" r="1.4"></circle>
+              <circle cx="18" cy="20" r="1.4"></circle>
+            </svg>
+          </span>
           <p class="cart-empty-title">Your cart is empty</p>
           <p class="cart-empty-subtitle">Add some lessons to get started!</p>
         </div>
@@ -273,7 +381,7 @@
             <div v-for="item in cart" :key="item.lessonId" class="cart-item">
               <span class="cart-item-topic">{{ item.topic }}</span>
               <span class="cart-item-qty">{{ item.quantity }}</span>
-              <button class="remove-btn" @click="removeFromCart(item.lessonId)">-</button>
+              <button class="remove-btn" @click="removeFromCart(item.lessonId)" :aria-label="`Remove one ${item.topic} space`">-</button>
             </div>
           </div>
 
@@ -328,7 +436,11 @@
         </div>
 
         <div v-else class="order-confirmation">
-          <div class="confirmation-icon">✓</div>
+          <div class="confirmation-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M5 12.5l4.5 4.5L19 7.5"></path>
+            </svg>
+          </div>
           <h3>Order Placed!</h3>
           <p>Thank you {{ customerName }}. Your order has been submitted successfully.</p>
           <button class="checkout-btn" @click="clearOrderConfirmation">Place Another Order</button>
@@ -342,11 +454,17 @@
           <span class="footer-logo">After-School App</span>
           <p class="footer-tagline">Learn Today. Excel Tomorrow.</p>
         </div>
-        <nav class="footer-nav">
+        <nav class="footer-nav" aria-label="Footer navigation">
           <a href="#" class="footer-link">About</a>
           <a href="#" class="footer-link">Contact</a>
           <a href="#" class="footer-link">FAQ</a>
         </nav>
+        <p class="footer-credit">
+          Photography: royalty-free images, see <a href="images/CREDITS.md" class="footer-link">credits</a>.
+        </p>
+      </div>
+      <div class="footer-bottom">
+        <p>CST3144 Full Stack Development · Vue.js front end</p>
       </div>
     </footer>
   </div>
