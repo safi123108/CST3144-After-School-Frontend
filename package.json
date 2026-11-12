@@ -5,7 +5,8 @@
   "main": "index.html",
   "scripts": {
     "start": "echo 'Open index.html in a browser or deploy to GitHub Pages'",
-    "lint": "echo 'Linting not configured yet'"
+    "check": "node --check js/config.js && node --check js/app.js",
+    "lint": "node --check js/config.js && node --check js/app.js"
   },
   "keywords": [
     "vue",
