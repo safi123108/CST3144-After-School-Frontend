@@ -1,9 +1,127 @@
 const { createApp, ref, onMounted, computed } = Vue;
 
-const API_BASE_URL = 'http://localhost:3000';
+const LOCAL_HOSTNAMES = new Set(['', 'localhost', '127.0.0.1', '[::1]', '::1']);
+const VALID_HTTP_URL_PATTERN = /^https?:\/\/[A-Za-z0-9.-]+(?::\d+)?(?:\/[^\s?#<>[\]]*)?$/;
+
+function normalizeApiBaseUrl(rawUrl) {
+  if (typeof rawUrl !== 'string') return '';
+  const trimmed = rawUrl.trim().replace(/\/+$/, '');
+  if (!trimmed || !VALID_HTTP_URL_PATTERN.test(trimmed)) {
+    return '';
+  }
+  return trimmed;
+}
+
+function isLocalEnvironment(locationLike) {
+  if (!locationLike) return true;
+  if (locationLike.protocol === 'file:') return true;
+  const hostname =
+    typeof locationLike.hostname === 'string' ? locationLike.hostname.trim().toLowerCase() : '';
+  return LOCAL_HOSTNAMES.has(hostname);
+}
+
+function resolveApiConfig(rawConfig, locationLike) {
+  const config = rawConfig && typeof rawConfig === 'object' ? rawConfig : {};
+  const explicitOverride = normalizeApiBaseUrl(config.apiBaseUrl);
+  const isLocal =
+    config.environment === 'production'
+      ? false
+      : config.environment === 'local'
+        ? true
+        : isLocalEnvironment(locationLike);
+
+  if (explicitOverride) {
+    return {
+      environment: isLocal ? 'local' : 'production',
+      apiBaseUrl: explicitOverride,
+      configError: null
+    };
+  }
+
+  if (isLocal) {
+    const localUrl = normalizeApiBaseUrl(config.localApiBaseUrl);
+    if (!localUrl) {
+      return {
+        environment: 'local',
+        apiBaseUrl: null,
+        configError:
+          'Local backend API URL is not configured. Load js/config.js with a valid localApiBaseUrl before js/app.js.'
+      };
+    }
+    return {
+      environment: 'local',
+      apiBaseUrl: localUrl,
+      configError: null
+    };
+  }
+
+  const productionUrl = normalizeApiBaseUrl(config.productionApiBaseUrl);
+  if (!productionUrl) {
+    return {
+      environment: 'production',
+      apiBaseUrl: null,
+      configError:
+        'Backend API URL is not configured for production hosting. Set productionApiBaseUrl in js/config.js to your deployed Render service URL.'
+    };
+  }
+
+  const prodHost = productionUrl.replace(/^https?:\/\//, '').split(/[/:]/)[0].toLowerCase();
+  if (LOCAL_HOSTNAMES.has(prodHost)) {
+    return {
+      environment: 'production',
+      apiBaseUrl: null,
+      configError:
+        'Production backend API URL cannot target localhost. Set productionApiBaseUrl in js/config.js to your deployed Render service URL.'
+    };
+  }
+
+  return {
+    environment: 'production',
+    apiBaseUrl: productionUrl,
+    configError: null
+  };
+}
+
+function getRuntimeConfig() {
+  if (typeof APP_CONFIG !== 'undefined' && APP_CONFIG && typeof APP_CONFIG === 'object') {
+    return APP_CONFIG;
+  }
+  if (typeof globalThis !== 'undefined' && globalThis.APP_CONFIG && typeof globalThis.APP_CONFIG === 'object') {
+    return globalThis.APP_CONFIG;
+  }
+  return {};
+}
+
+function getRuntimeLocation() {
+  if (typeof location !== 'undefined' && location) {
+    return location;
+  }
+  if (typeof globalThis !== 'undefined' && globalThis.location) {
+    return globalThis.location;
+  }
+  return null;
+}
 
 const app = createApp({
   setup() {
+    const apiConfig = resolveApiConfig(getRuntimeConfig(), getRuntimeLocation());
+    const API_BASE_URL = apiConfig.apiBaseUrl;
+    const API_CONFIG_ERROR = apiConfig.configError;
+
+    if (API_CONFIG_ERROR) {
+      console.error(API_CONFIG_ERROR);
+    }
+
+    const buildApiUrl = (endpoint) => {
+      if (!API_BASE_URL) {
+        throw new Error(
+          API_CONFIG_ERROR ||
+            'Backend API URL is not configured. Set productionApiBaseUrl in js/config.js.'
+        );
+      }
+      const normalizedPath = endpoint.startsWith('/') ? endpoint : `/${endpoint}`;
+      return `${API_BASE_URL}${normalizedPath}`;
+    };
     const lessons = ref([]);
     const error = ref(null);
     const loading = ref(true);
@@ -40,7 +158,7 @@ const app = createApp({
 
     const fetchLessons = async () => {
       try {
-        const response = await fetch(`${API_BASE_URL}/lessons`);
+        const response = await fetch(buildApiUrl('/lessons'));
         if (!response.ok) {
           throw new Error(`Failed to load lessons: ${response.status}`);
         }
@@ -62,7 +180,7 @@ const app = createApp({
       searchError.value = null;
 
       try {
-        const response = await fetch(`${API_BASE_URL}/lessons/search?q=${encodeURIComponent(q)}`);
+        const response = await fetch(buildApiUrl(`/lessons/search?q=${encodeURIComponent(q)}`));
         if (!response.ok) {
           const errorData = await response.json().catch(() => ({}));
           throw new Error(errorData.message || `Search failed: ${response.status}`);
@@ -124,7 +242,7 @@ const app = createApp({
       teachersLoading.value = true;
       teachersError.value = null;
       try {
-        const response = await fetch(`${API_BASE_URL}/teachers`);
+        const response = await fetch(buildApiUrl('/teachers'));
         if (!response.ok) {
           const errorData = await response.json().catch(() => ({}));
           throw new Error(errorData.message || `Failed to load teachers: ${response.status}`);
@@ -153,7 +271,7 @@ const app = createApp({
       teacherLessonsError.value = null;
 
       try {
-        const response = await fetch(`${API_BASE_URL}/teachers/${encodeURIComponent(teacherId)}/lessons`);
+        const response = await fetch(buildApiUrl(`/teachers/${encodeURIComponent(teacherId)}/lessons`));
         if (!response.ok) {
           const errorData = await response.json().catch(() => ({}));
           throw new Error(errorData.message || `Failed to load teacher lessons: ${response.status}`);
@@ -185,7 +303,7 @@ const app = createApp({
       };
 
       try {
-        const response = await fetch(`${API_BASE_URL}/enrolment/${encodeURIComponent(lessonId)}`);
+        const response = await fetch(buildApiUrl(`/enrolment/${encodeURIComponent(lessonId)}`));
         const result = await response.json().catch(() => ({}));
         if (!response.ok) {
           throw new Error(result.message || `Failed to load enrolment: ${response.status}`);
@@ -438,7 +556,7 @@ const app = createApp({
 
       try {
         // Step 1: POST /orders
-        const response = await fetch(`${API_BASE_URL}/orders`, {
+        const response = await fetch(buildApiUrl('/orders'), {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json'
@@ -475,7 +593,7 @@ const app = createApp({
           }
 
           try {
-            const putResponse = await fetch(`${API_BASE_URL}/lessons/${encodeURIComponent(item.lessonId)}`, {
+            const putResponse = await fetch(buildApiUrl(`/lessons/${encodeURIComponent(item.lessonId)}`), {
               method: 'PUT',
               headers: {
                 'Content-Type': 'application/json'
@@ -531,7 +649,7 @@ const app = createApp({
           // Cancel unconfirmed items via DELETE /orders/:orderId
           let cancellationMessage = '';
           try {
-            const deleteResponse = await fetch(`${API_BASE_URL}/orders/${encodeURIComponent(orderId.value)}`, {
+            const deleteResponse = await fetch(buildApiUrl(`/orders/${encodeURIComponent(orderId.value)}`), {
               method: 'DELETE'
             });
             const deleteData = await deleteResponse.json().catch(() => ({}));
@@ -644,6 +762,9 @@ const app = createApp({
     }
 
     return {
+      apiEnvironment: apiConfig.environment,
+      apiBaseUrl: API_BASE_URL,
+      apiConfigError: API_CONFIG_ERROR,
       lessons,
       error,
       loading,
